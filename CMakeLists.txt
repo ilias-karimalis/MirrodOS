@@ -27,7 +27,7 @@ add_custom_target(download_ovmf
 
 # Custom target to run the kernel in QEMU
 add_custom_target(run
-    COMMAND ${SCRIPTS_DIR}/qemu.sh ${IMAGE_NAME} ovmf/ovmf-code-riscv64.fd
+    COMMAND ${SCRIPTS_DIR}/qemu.sh ${IMAGE_NAME} ovmf/ovmf-code-riscv64.fd -D hdd.dsk
     DEPENDS iso_file download_ovmf
     COMMENT "Running Octiron in QEMU"
 )

@@ -13,7 +13,22 @@ virtio_mmio_device_legacy_initialize(struct virtio_driver* device, void* device_
         volatile struct virtio_mmio_control_registers* regs =
           (volatile struct virtio_mmio_control_registers*)device_base;
         kprintln(SV("Device Type: {X}"), regs->device_id);
-        TODO("Implement Virtio MMIO Legacy Version support.");
+
+        switch (regs->device_id) {
+                case VIRTIO_DEVICE_TYPE_RESERVED:
+                        device->type = VIRTIO_DEVICE_TYPE_RESERVED;
+                        return EC_VIRTIO_INVALID_DEVICE;
+                case VIRTIO_DEVICE_TYPE_BLOCK_DEVICE:
+                        device->type = VIRTIO_DEVICE_TYPE_BLOCK_DEVICE;
+                        TODO("Implement Virtio Block Device support.");
+                        break;
+                default:
+                        kprintln(SV("Unsupported Virtio MMIO device type {X}"), regs->device_id);
+                        device->type = VIRTIO_DEVICE_TYPE_UNSUPPORTED;
+                        return EC_VIRTIO_UNSUPPORTED_DEVICE;
+        }
+        // TODO("Implement Virtio MMIO Legacy Version support.");
+        return EC_SUCCESS;
 }
 
 error_t
@@ -33,22 +48,6 @@ virtio_mmio_driver_init(struct virtio_driver* device, void* device_base, size_t 
                 return virtio_mmio_device_legacy_initialize(device, device_base, device_size);
         } else if (regs->version == VIRTIO_DEVICE_VERSION_NEW) {
                 return virtio_mmio_device_regular_initialize(device, device_base, device_size);
-        } else {
-                device->status = VIRTIO_DEVICE_MALFORMED;
-                return EC_VIRTIO_UNSUPPORTED_VERSION;
         }
-        // if (regs->version != VIRTIO_MMIO_VERSION_2) {
-        //         kprintln(SV("Unsupported Virtio MMIO version: {D}"), regs->version);
-        //         return EC_VIRTIO_UNSUPPORTED_VERSION;
-        // }
-        // if (regs->device_id == VIRTIO_DEVICE_TYPE_RESERVED) {
-        //         return EC_VIRTIO_INVALID_DEVICE;
-        // }
-
-        // device->type = (enum virtio_device_type)regs->device_id;
-        // kprintln(SV("Found Virtio MMIO Device: Type {X}, Vendor {X}, Base Address: {X}"),
-        //          device->type,
-        //          regs->vendor_id,
-        //          (u64)device_base);
-        // return EC_NOT_IMPLEMENTED;
+        return EC_VIRTIO_UNSUPPORTED_VERSION;
 }

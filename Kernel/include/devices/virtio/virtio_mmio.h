@@ -33,6 +33,8 @@ struct virtio_mmio_control_registers
 
 enum virtio_device_status
 {
+        /// Writen to the device by the driver at any time to reset the device.
+        VIRTIO_DEVICE_STATUS_RESET = 0x0,
         /// Indicates that the guest OS has found the device and recognized it as a valid virtio device.
         VIRTIO_DEVICE_STATUS_ACKNOWLEDGE = 0x1,
         /// Indicates that the guest OS knows how to drive the device.
@@ -46,8 +48,6 @@ enum virtio_device_status
         /// internal error, or the driver didn't like the device for some reason, or even a fatal error during device
         /// operation. The driver MUST reset the device before attempting to re-initialize it.
         VIRTIO_DEVICE_STATUS_FAILED = 0x80,
-        /// TODO: Do we actually need one of these, or can we use STATUS_FAILED for malformed devices too?
-        VIRTIO_DEVICE_MALFORMED = 0x81,
 };
 
 enum virtio_device_type
@@ -75,12 +75,20 @@ enum virtio_device_type
         VIRTIO_DEVICE_TYPE_PSTORE = 0x16,
         VIRTIO_DEVICE_TYPE_IOMMU = 0x17,
         VIRTIO_DEVICE_TYPE_MEMORY = 0x18,
+        VIRTIO_DEVICE_TYPE_UNSUPPORTED = 0x100,
 };
+
+struct virtio_blk_driver
+{};
 
 struct virtio_driver
 {
         enum virtio_device_status status;
         enum virtio_device_type type;
+        union
+        {
+                struct virtio_blk_driver blk;
+        } d;
 };
 
 error_t

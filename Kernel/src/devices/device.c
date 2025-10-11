@@ -59,7 +59,14 @@ devices_recursive_initialize(struct device_tree* tree, struct device_tree_node* 
                         u64 phys_size = ((u64*)reg->value.reg.sizes)[0];
                         void* virt_addr = kernel_hhdm_phys_to_virt(phys_addr);
                         struct driver_node* virtio_node = slab_allocate(&driver_node_arena);
-                        virtio_mmio_driver_init(&virtio_node->driver.d.virtio, virt_addr, phys_size);
+                        error_t err = virtio_mmio_driver_init(&virtio_node->driver.d.virtio, virt_addr, phys_size);
+                        if (error_is_err(err)) {
+                                kprintln(SV("Failed to initialize the VirtIO MMIO device at {X}: {V}"),
+                                         phys_addr,
+                                         SVP(error_string(err)));
+                                slab_free(&driver_node_arena, virtio_node);
+                                continue;
+                        }
                         virtio_node->driver.type = DEVICE_TYPE_VIRTIO_MMIO;
                         virtio_node->next = drivers;
                         drivers = virtio_node;
