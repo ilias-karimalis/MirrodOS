@@ -1,5 +1,14 @@
 #pragma once
 
+// For now we're only handling a very simple short set of printing directives:
+// {S} : print string
+// {V} : print str_view
+// {C} : print char
+// {D} : print unsigned size_t base 10
+// {X} : print unsigned size_t base 16
+// {B} : print unsigned size_t base 2
+
+
 #include <types/error.h>
 #include <types/str_view.h>
 

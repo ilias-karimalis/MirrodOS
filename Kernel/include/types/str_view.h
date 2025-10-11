@@ -12,13 +12,13 @@ struct str_view
 
 /// Constructs a str_view from a null-terminated string.
 struct str_view
-sv_from_null_term(const char* str);
+sv_from_null_term(const void* str);
 
 /// Constructs a str_view from a string literal.
 #define SV(str) (struct str_view){ .data = str, .size = sizeof(str) / sizeof(str[0]) - 1 }
 // Not sure this is a good idea and it's quite jank, but we can print str_views by expanding them to the pointer size
 // and accounting for it being two arguments:
-#define SVP(strview) strview.data, strview.size
+#define SVP(strview) (strview).data, (strview).size
 
 /// Accesses the i-th character.
 // char

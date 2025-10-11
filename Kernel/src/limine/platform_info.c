@@ -1,5 +1,5 @@
 #include <limine/limine.h>
-#include <limine/platfrom_info.h>
+#include <limine/platform_info.h>
 #include <types/error.h>
 
 #define LIMINE_REQ __attribute__((used, section(".limine_requests")))
@@ -40,6 +40,13 @@ LIMINE_REQ volatile struct limine_hhdm_request hhdm_request = {
         .response = NULL,
 };
 
+/// RISCV BSP Hart ID request
+LIMINE_REQ volatile struct limine_riscv_bsp_hartid_request bsp_hartid_req = {
+        .id = LIMINE_RISCV_BSP_HARTID_REQUEST,
+        .revision = 0,
+        .response = NULL,
+};
+
 /// End marker for the limine request section
 LIMINE_END volatile LIMINE_REQUESTS_END_MARKER;
 
@@ -55,4 +62,6 @@ populate_platform_info(void)
         pinfo.dtb_response = dtb_request.response;
         pinfo.hhdm_response = hhdm_request.response;
         pinfo.hhdm_offset = pinfo.hhdm_response->offset;
+        pinfo.bsp_hartid_response = bsp_hartid_req.response;
+        pinfo.bsp_hartid = pinfo.bsp_hartid_response->bsp_hartid;
 }

@@ -1,3 +1,4 @@
+#include <fmt/print.h>
 #include <kvspace.h>
 #include <pmm.h>
 #include <riscv.h>
@@ -136,4 +137,43 @@ riscv_sv39_unmap_small_page(struct riscv_sv39_pt* root, vaddr_t va, paddr_t* pa)
         }
         *l0_entry = 0;
         return EC_SUCCESS;
+}
+
+paddr_t
+riscv_sv39_virt_to_phys(struct riscv_sv39_pt* root, vaddr_t va)
+{
+        u64 vpn[] = {
+                (va >> 12) & 0x1FF, // Level 0 index
+                (va >> 21) & 0x1FF, // Level 1 index
+                (va >> 30) & 0x1FF  // Level 2 index
+        };
+        paddr_t page_offset = va & (RISCV_SV39_PAGE_SIZE - 1);
+
+        u64 l2_entry = root->entries[vpn[2]];
+        if (!riscv_sv39_pte_valid(l2_entry)) {
+                return 0;
+        } else if (riscv_sv39_pte_leaf(l2_entry)) {
+                paddr_t pa = riscv_sv39_pte_get_address(l2_entry);
+                return pa + page_offset;
+        }
+
+        struct riscv_sv39_pt* l1_pt = kernel_hhdm_phys_to_virt(riscv_sv39_pte_get_address(l2_entry));
+        u64 l1_entry = l1_pt->entries[vpn[1]];
+        if (!riscv_sv39_pte_valid(l1_entry)) {
+                return 0;
+        } else if (riscv_sv39_pte_leaf(l1_entry)) {
+                paddr_t pa = riscv_sv39_pte_get_address(l1_entry);
+                return pa + page_offset;
+        }
+
+        struct riscv_sv39_pt* l0_pt = kernel_hhdm_phys_to_virt(riscv_sv39_pte_get_address(l1_entry));
+        u64 l0_entry = l0_pt->entries[vpn[0]];
+        if (!riscv_sv39_pte_valid(l0_entry)) {
+                return 0;
+        } else if (riscv_sv39_pte_leaf(l0_entry)) {
+                paddr_t pa = riscv_sv39_pte_get_address(l0_entry);
+                return pa + page_offset;
+        }
+
+        return 0;
 }

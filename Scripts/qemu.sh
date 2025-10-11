@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Parse command line arguments
-DISPLAY_FLAG=""
+DISPLAY_FLAG="-nographic"
 IMAGE_FILE=""
 BIOS_FILE=""
 
@@ -33,9 +33,9 @@ fi
 DISPLAY_OPTIONS=""
 if [[ "$DISPLAY_FLAG" == "true" ]]; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        DISPLAY_OPTIONS="-display cocoa"
+        DISPLAY_OPTIONS="-device ramfb -display cocoa"
     elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        DISPLAY_OPTIONS="-display gtk"
+        DISPLAY_OPTIONS="-device ramfb -display gtk"
     else
         echo "Error: Unsupported operating system: $OSTYPE"
         echo "This script only supports macOS (darwin) and Linux (linux-gnu)"
@@ -46,11 +46,10 @@ fi
 qemu-system-riscv64 \
     -machine virt \
     -m 2G \
-    -cpu rv64 \
+    -cpu rv64,sstc=true \
     -device qemu-xhci \
     -device usb-kbd \
     -device usb-mouse \
-    -device ramfb \
     -drive if=pflash,unit=0,format=raw,file=${BIOS_FILE},readonly=on \
     -cdrom ${IMAGE_FILE} \
     ${DISPLAY_OPTIONS} \

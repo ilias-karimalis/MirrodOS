@@ -27,7 +27,5 @@
         do {                                                                                                           \
                 kprintln_string(SV("[Kernel Panic]:"));                                                                \
                 __VA_OPT__(kprintln(__VA_ARGS__);)                                                                     \
-                for (;;) {                                                                                             \
-                        asm("wfi");                                                                                    \
-                }                                                                                                      \
+                for (;;);                                                                                              \
         } while (0)

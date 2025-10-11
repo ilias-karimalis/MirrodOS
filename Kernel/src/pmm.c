@@ -6,8 +6,8 @@
 #include <riscv.h>
 #include <stdalign.h>
 #include <types/error.h>
-#include <types/generic_arena.h>
 #include <types/number.h>
+#include <types/slab.h>
 
 struct pmm_memory_block
 {
@@ -31,18 +31,18 @@ size_t total_bytes = 0;
 size_t free_bytes = 0;
 size_t region_count = 0;
 struct pmm_memory_region regions[REGION_COUNT] = { 0 };
-struct generic_arena block_arena = { 0 };
+struct slab_alloc block_arena = { 0 };
 
-/// Initial generic_arena buffer
-#define INITIAL_BUF_SIZE GA_REGION_SIZE(sizeof(struct pmm_memory_block), 100)
-alignas(GA_REGION_ALIGN) u8 initial_buf[INITIAL_BUF_SIZE] = {};
+/// Initial slab buffer
+#define INITIAL_BUF_SIZE SLAB_REGION_SIZE(sizeof(struct pmm_memory_block), 100)
+alignas(SLAB_REGION_ALIGN) u8 initial_buf[INITIAL_BUF_SIZE] = {};
 
 void
 pmm_initialize(enum pmm_policy pol)
 {
         policy = pol;
-        generic_arena_initialize(&block_arena, sizeof(struct pmm_memory_block));
-        generic_arena_grow(&block_arena, initial_buf, INITIAL_BUF_SIZE);
+        slab_init(&block_arena, sizeof(struct pmm_memory_block));
+        slab_grow(&block_arena, initial_buf, INITIAL_BUF_SIZE);
 }
 
 error_t
@@ -68,7 +68,7 @@ pmm_add_region(u64 region_base, size_t region_size)
                 }
         }
 
-        struct pmm_memory_block* free_block = generic_arena_alloc(&block_arena);
+        struct pmm_memory_block* free_block = slab_allocate(&block_arena);
         ASSERT(free_block != NULL);
         regions[region_count].region_base = aligned_base;
         regions[region_count].region_size = aligned_size;
@@ -88,34 +88,24 @@ error_t
 pmm_alloc_aligned(size_t size, size_t alignment, paddr_t* region)
 {
         size_t aligned_size = ALIGN_UP(size, RISCV_SV39_PAGE_SIZE);
-        kprintln(SV("*"));
         if (region == NULL) {
                 return EC_NULL_ARGUMENT;
         }
-        kprintln(SV("*"));
-
         if (alignment < RISCV_SV39_PAGE_SIZE || (alignment & (alignment - 1)) != 0) {
                 *region = 0;
                 return EC_PMM_BAD_ALIGNMENT;
         }
-        kprintln(SV("*"));
-
         if (free_bytes < aligned_size) {
                 *region = 0;
                 return EC_PMM_OUT_OF_MEMORY;
         }
-        kprintln(SV("*"));
-
         if (block_arena.free_blocks < 16) {
                 TODO("struct pmm_memory_block arena allocator is out of memory. Need to implement "
                      "refilling.");
         }
-        kprintln(SV("*"));
-
         if (policy != PMM_POLICY_FIRST_FIT) {
                 TODO("Chosen policy is not implemented.");
         }
-        kprintln(SV("*"));
 
         for (size_t i = 0; i < region_count; i++) {
                 if (regions[i].free_bytes < aligned_size) {
@@ -133,44 +123,36 @@ pmm_alloc_aligned(size_t size, size_t alignment, paddr_t* region)
                                 curr = curr->next;
                                 continue;
                         }
-                        kprintln(SV("1"));
 
                         size_t offset = aligned_base - curr_base;
                         bool EXISTS_PRECEEDING = curr_base != aligned_base;
                         bool EXISTS_POSTCEEDING = curr_base + curr_size > aligned_base + aligned_size;
                         if (EXISTS_PRECEEDING && EXISTS_POSTCEEDING) {
-                                kprintln(SV("2"));
                                 curr->block_size = offset;
-                                struct pmm_memory_block* extra = generic_arena_alloc(&block_arena);
+                                struct pmm_memory_block* extra = slab_allocate(&block_arena);
                                 ASSERT(extra != NULL);
                                 extra->block_base = aligned_base + aligned_size;
                                 extra->block_size = curr_base + curr_size - (aligned_base + aligned_size);
                                 extra->next = curr->next;
                         } else if (EXISTS_PRECEEDING) {
-                                kprintln(SV("3"));
                                 curr->block_size = offset;
                         } else if (EXISTS_POSTCEEDING) {
-                                kprintln(SV("4"));
                                 curr->block_base = aligned_base + aligned_size;
                                 curr->block_size = curr_base + curr->block_size - (aligned_base + aligned_size);
                         } else if (prev == NULL) {
-                                kprintln(SV("5"));
                                 regions[i].free_blocks = curr->next;
-                                error_t err = generic_arena_free(&block_arena, curr);
+                                error_t err = slab_free(&block_arena, curr);
                                 ASSERT(error_is_ok(err));
                         } else {
-                                kprintln(SV("6"));
                                 prev->next = curr->next;
-                                error_t err = generic_arena_free(&block_arena, curr);
+                                error_t err = slab_free(&block_arena, curr);
                                 ASSERT(error_is_ok(err));
                         }
 
                         regions[i].free_bytes -= aligned_size;
                         free_bytes -= aligned_size;
                         *region = aligned_base;
-                        kprintln(SV("7"));
                         memzero(kernel_hhdm_phys_to_virt(*region), aligned_size);
-                        kprintln(SV("8"));
                         return EC_SUCCESS;
                 }
         }

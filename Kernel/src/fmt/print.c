@@ -54,13 +54,6 @@ base_compute:
 void
 kprint_print_spec(struct str_view spec, va_list* args)
 {
-        // For now we're only handling a very simple short set of printing directives:
-        // {S} : print string
-        // {V} : print str_view
-        // {C} : print char
-        // {D} : print unsigned size_t base 10
-        // {X} : print unsigned size_t base 16
-        // {B} : print unsigned size_t base 2
         ASSERT(spec.size == 1);
         char spec_byte = spec.data[0];
 
@@ -89,6 +82,10 @@ kprint_print_spec(struct str_view spec, va_list* args)
                 case 'X': {
                         size_t v = va_arg(*args, size_t);
                         kprint_print_int(v, 16);
+                } break;
+                case 'B': {
+                        size_t v = va_arg(*args, size_t);
+                        kprint_print_int(v, 2);
                 } break;
 
                 default:

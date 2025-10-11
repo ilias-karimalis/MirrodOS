@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
-project(mirodos VERSION 1.0 LANGUAGES C)
+project(mirodos VERSION 1.0 LANGUAGES C ASM)
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_COMPILER "/usr/bin/riscv64-unknown-elf-gcc")
+set(CMAKE_C_COMPILER "/opt/riscv/bin/riscv64-unknown-elf-gcc")
+set(CMAKE_ASM_COMPILER "/opt/riscv/bin/riscv64-unknown-elf-gcc")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

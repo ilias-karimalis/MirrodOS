@@ -1,33 +1,47 @@
 #include <assert.h>
+#include <fmt/print.h>
+#include <kvspace.h>
 #include <memory.h>
+#include <riscv.h>
 #include <types/error.h>
-#include <types/generic_arena.h>
 #include <types/number.h>
+#include <types/slab.h>
 
 void
-generic_arena_initialize(struct generic_arena* arena, size_t objsize)
+slab_init(struct slab_alloc* arena, size_t objsize)
 {
         ASSERT(arena != NULL);
-        arena->block_size = GA_BLOCK_SIZE(objsize);
+        arena->block_size = SLAB_BLOCK_SIZE(objsize);
         arena->free_blocks = 0;
         arena->total_blocks = 0;
         arena->current_region = NULL;
         arena->block_list = NULL;
+        arena->auto_refill = false;
 }
 
 void
-generic_arena_grow(struct generic_arena* arena, void* buffer, size_t buffer_size)
+slab_autorefill_init(struct slab_alloc* arena, size_t objsize)
+{
+        ASSERT(arena != NULL);
+        arena->block_size = SLAB_BLOCK_SIZE(objsize);
+        arena->free_blocks = 0;
+        arena->total_blocks = 0;
+        arena->current_region = NULL;
+        arena->block_list = NULL;
+        arena->auto_refill = true;
+}
+
+void
+slab_grow(struct slab_alloc* arena, void* buffer, size_t buffer_size)
 {
         ASSERT(arena != NULL);
         ASSERT(buffer != NULL);
-        ASSERT(buffer_size >= GA_REGION_SIZE(arena->block_size, 1));
+        ASSERT(buffer_size >= SLAB_REGION_SIZE(arena->block_size, 1));
 
-        struct generic_arena_region* new_region = buffer;
-        new_region->current_offset =
-          (u8*)ALIGN_UP(((size_t)buffer) + sizeof(struct generic_arena_region), arena->block_size);
+        struct slab_region* new_region = buffer;
+        new_region->current_offset = (u8*)ALIGN_UP(((size_t)buffer) + sizeof(struct slab_region), arena->block_size);
         new_region->region_end = (u8*)ALIGN_DOWN(((size_t)buffer + buffer_size), arena->block_size);
-        size_t new_blocks =
-          (new_region->region_end - new_region->current_offset) / arena->block_size;
+        size_t new_blocks = (new_region->region_end - new_region->current_offset) / arena->block_size;
         arena->free_blocks += new_blocks;
         arena->total_blocks += new_blocks;
 
@@ -55,7 +69,7 @@ generic_arena_grow(struct generic_arena* arena, void* buffer, size_t buffer_size
 }
 
 void*
-generic_arena_alloc(struct generic_arena* arena)
+slab_allocate(struct slab_alloc* arena)
 {
         ASSERT(arena != NULL);
 
@@ -65,10 +79,13 @@ generic_arena_alloc(struct generic_arena* arena)
                 arena->free_blocks--;
                 memzero(retval, arena->block_size);
                 return retval;
-        }
-        if (arena->free_blocks == 0) {
+        } else if (arena->free_blocks == 0 && arena->auto_refill == false) {
                 return NULL;
+        } else if (arena->free_blocks == 0) {
+                struct allocation slab_mem = kalloc(RISCV_SV39_PAGE_SIZE, RISCV_SV39_PAGE_SIZE);
+                slab_grow(arena, slab_mem.buffer, slab_mem.size);
         }
+
         /// Simple allocation
         if (arena->current_region->current_offset != arena->current_region->region_end) {
                 void* retval = arena->current_region->current_offset;
@@ -89,12 +106,12 @@ generic_arena_alloc(struct generic_arena* arena)
 }
 
 error_t
-generic_arena_free(struct generic_arena* arena, void* obj)
+slab_free(struct slab_alloc* arena, void* obj)
 {
         ASSERT(arena != NULL);
         ASSERT(obj != NULL);
 
-        struct generic_arena_block* new_block = obj;
+        struct slab_block* new_block = obj;
         new_block->next_block = arena->block_list;
         arena->block_list = new_block;
         arena->free_blocks++;

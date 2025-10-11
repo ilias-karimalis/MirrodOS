@@ -14,6 +14,6 @@ typedef u64 vaddr_t;
 
 typedef int64_t ssize_t;
 
-#define ALIGN_UP(value, alignment) (((value) + (alignment) - 1) & ~((alignment) - 1))
-#define ALIGN_DOWN(value, alignment) ((value) & ~((alignment) - 1))
-#define IS_ALIGNED(value, alignment) (0 == (value) % (alignment))
+#define ALIGN_UP(value, alignment) (((size_t)(value) + (size_t)(alignment) - 1) & ~((size_t)(alignment) - 1))
+#define ALIGN_DOWN(value, alignment) ((size_t)(value) & ~((size_t)(alignment) - 1))
+#define IS_ALIGNED(value, alignment) (0 == (size_t)(value) % (size_t)(alignment))

@@ -33,6 +33,23 @@ enum ErrorCode
         EC_DT_BLOB_INVALID_MAGIC,
         EC_DT_BLOB_EMPTY_TREE,
         EC_DT_BLOB_REWRITE_FAILED,
+        EC_DT_ADDRESS_CELLS_TOO_LARGE,
+        EC_DT_SIZE_CELLS_TOO_LARGE,
+
+        // Driver Errors
+        EC_DEVICE_NO_DEVICES,
+
+        // Plic Errors
+        EC_PLIC_ALREADY_INITIALIZED,
+        EC_PLIC_NO_INTERRUPT,
+        EC_PLIC_UNREGISTERED_DRIVER,
+        EC_PLIC_UNREGISTERED_INTERRUPT,
+
+        /// Uart Errors
+        EC_UART_DRIVER_NO_DATA,
+
+        // This must be the last entry - used for counting
+        EC_COUNT
 };
 
 typedef u64 error_t;

@@ -46,29 +46,42 @@ enum virtio_device_status
         /// internal error, or the driver didn't like the device for some reason, or even a fatal error during device
         /// operation. The driver MUST reset the device before attempting to re-initialize it.
         VIRTIO_DEVICE_STATUS_FAILED = 0x80,
+        /// TODO: Do we actually need one of these, or can we use STATUS_FAILED for malformed devices too?
+        VIRTIO_DEVICE_MALFORMED = 0x81,
 };
 
 enum virtio_device_type
 {
         VIRTIO_DEVICE_TYPE_RESERVED = 0x0,
-        VIRTIO_DEVICE_TYPE_NETWORK_CARD = 0x1,
+        VIRTIO_DEVICE_TYPE_NETWORK = 0x1,
         VIRTIO_DEVICE_TYPE_BLOCK_DEVICE = 0x2,
         VIRTIO_DEVICE_TYPE_CONSOLE = 0x3,
         VIRTIO_DEVICE_TYPE_ENTROPY_SOURCE = 0x4,
-        VIRTIO_DEVICE_TYPE_MEMORY_BALLOON = 0x5,
+        VIRTIO_DEVICE_TYPE_MEMORY_BALLOON_TRAD = 0x5,
         VIRTIO_DEVICE_TYPE_IOMEMORY = 0x6,
         VIRTIO_DEVICE_TYPE_RPMSG = 0x7,
         VIRTIO_DEVICE_TYPE_SCSI_HOST = 0x8,
         VIRTIO_DEVICE_TYPE_9P_TRANSPORT = 0x9,
         VIRTIO_DEVICE_TYPE_MAC80211_WLAN = 0xA,
         VIRTIO_DEVICE_TYPE_RPROC_SERIAL = 0xB,
-        VIRTIO_DEVICE_TYPE_CAIF = 0xC
+        VIRTIO_DEVICE_TYPE_CAIF = 0xC,
+        VIRTIO_DEVICE_TYPE_MEMORY_BALLOON = 0xD,
+        VIRTIO_DEVICE_TYPE_GPU = 0x10,
+        VIRTIO_DEVICE_TYPE_TIMER = 0x11,
+        VIRTIO_DEVICE_TYPE_INPUT = 0x12,
+        VIRTIO_DEVICE_TYPE_SOCKET = 0x13,
+        VIRTIO_DEVICE_TYPE_CRYPTO = 0x14,
+        VIRTIO_DEVICE_TYPE_SIGNAL_DIST = 0x15,
+        VIRTIO_DEVICE_TYPE_PSTORE = 0x16,
+        VIRTIO_DEVICE_TYPE_IOMMU = 0x17,
+        VIRTIO_DEVICE_TYPE_MEMORY = 0x18,
 };
 
-struct virtio_device
+struct virtio_driver
 {
+        enum virtio_device_status status;
         enum virtio_device_type type;
 };
 
 error_t
-virtio_mmio_initialize_device(void* device_base, struct virtio_device* device);
+virtio_mmio_driver_init(struct virtio_driver* device, void* device_base, size_t device_size);

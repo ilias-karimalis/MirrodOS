@@ -18,6 +18,9 @@ extern struct platform_info
         /// Higher half direct mapping base
         struct limine_hhdm_response* hhdm_response;
         size_t hhdm_offset;
+        /// RISCV BSP Hart ID
+        struct limine_riscv_bsp_hartid_response* bsp_hartid_response;
+        u64 bsp_hartid;
 } pinfo;
 
 void
