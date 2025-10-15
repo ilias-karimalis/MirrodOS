@@ -3,7 +3,7 @@
 #include <devices/device_tree/blob.h>
 #include <devices/plic.h>
 #include <devices/uart.h>
-#include <devices/virtio/virtio_mmio.h>
+#include <devices/virtio/mmio.h>
 
 enum device_type
 {

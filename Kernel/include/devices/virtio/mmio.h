@@ -3,7 +3,36 @@
 #include <types/error.h>
 #include <types/number.h>
 
-struct virtio_mmio_control_registers
+// Virtio MMIO Legacy layout. Only the fields we want to access are u32; gaps are explicit u8 padding.
+struct virtio_mmio_legacy_registers
+{
+        u32 magic_value;         // 0x000
+        u32 version;             // 0x004
+        u32 device_id;           // 0x008
+        u32 vendor_id;           // 0x00C
+        u32 device_features;     // 0x010
+        u32 device_features_sel; // 0x014
+        u8 _pad_018_01F[0x8];    // 0x018 - 0x01F
+        u32 driver_features;     // 0x020
+        u32 driver_features_sel; // 0x024
+        u8 _pad_028_02F[0x8];    // 0x028 - 0x02F
+        u32 queue_sel;           // 0x030
+        u32 queue_num_max;       // 0x034
+        u32 queue_num;           // 0x038
+        u32 queue_align;         // 0x03C
+        u32 queue_pfn;           // 0x040
+        u8 _pad_044_04F[0xC];    // 0x044 - 0x04F
+        u32 queue_notify;        // 0x050
+        u8 _pad_054_05F[0xC];    // 0x054 - 0x05F
+        u32 interrupt_status;    // 0x060
+        u32 interrupt_ack;       // 0x064
+        u8 _pad_068_06F[0x8];    // 0x068 - 0x06F
+        u32 status;              // 0x070
+        u8 _pad_074_0FF[0x8C];   // 0x074 - 0x0FF
+        u8 config[0];            // 0x100 - device specific
+};
+
+struct virtio_mmio_v2_registers
 {
         u32 magic_value;
         u32 version;
@@ -85,6 +114,13 @@ struct virtio_driver
 {
         enum virtio_device_status status;
         enum virtio_device_type type;
+        bool is_legacy;
+        union registers
+        {
+                volatile struct virtio_mmio_legacy_registers* legacy;
+                volatile struct virtio_mmio_v2_registers* v2;
+        } regs;
+
         union
         {
                 struct virtio_blk_driver blk;

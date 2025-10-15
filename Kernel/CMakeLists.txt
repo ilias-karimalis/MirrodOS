@@ -9,7 +9,8 @@ add_executable(MirodosKernel.elf
     src/devices/device.c
     src/devices/plic.c
     src/devices/uart.c
-    src/devices/virtio/virtio_mmio.c
+    src/devices/virtio/mmio.c
+    src/devices/virtio/blk.c
     src/fmt/print.c
     src/kernel_entry.c
     src/kvspace.c
