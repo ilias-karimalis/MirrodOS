@@ -2,8 +2,8 @@
 
 #include <fmt/print.h>
 
-#define S(x) #x
-#define S_(x) S(x)
+#define S_MACRO(x) #x
+#define S_(x) S_MACRO(x)
 #define S__LINE__ S_(__LINE__)
 
 #define ASSERT(condition, ...)                                                                                         \

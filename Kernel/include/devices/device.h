@@ -17,7 +17,7 @@ struct driver
         enum device_type type;
         union
         {
-                struct virtio_driver virtio;
+                struct VirtioDevice virtio;
                 struct plic_driver plic;
                 struct uart_driver uart;
         } d;

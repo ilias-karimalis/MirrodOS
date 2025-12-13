@@ -115,4 +115,3 @@ kernel_asm_trap_handler:
         ld      x31, 248(t6)
 
         sret
-        

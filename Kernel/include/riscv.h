@@ -71,10 +71,15 @@ riscv_sv39_pte_leaf(u64 pte)
         return (pte & (RISCV_SV39_PTFLAG_READ | RISCV_SV39_PTFLAG_WRITE | RISCV_SV39_PTFLAG_EXECUTE)) != 0;
 }
 
+/// A page table structure for the RISC-V Sv39 virtual memory system.
 struct riscv_sv39_pt
 {
         u64 entries[RISCV_SV39_PT_ENTRY_COUNT];
 };
+
+/// Initializes the given page table by zeroing out all entries.
+void
+riscv_sv39_pt_initialize(struct riscv_sv39_pt* pt);
 
 /// Maps a page into the given page table. If any level of the page table doesn't exist, then it is created.
 error_t

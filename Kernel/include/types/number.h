@@ -9,6 +9,12 @@ typedef uint32_t u32;
 typedef uint64_t u64;
 typedef unsigned __int128 u128;
 
+typedef int8_t i8;
+typedef int16_t i16;
+typedef int32_t i32;
+typedef int64_t i64;
+typedef __int128 i128;
+
 typedef u64 paddr_t;
 typedef u64 vaddr_t;
 

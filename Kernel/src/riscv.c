@@ -1,9 +1,16 @@
 #include <fmt/print.h>
 #include <kvspace.h>
+#include <memory.h>
 #include <pmm.h>
 #include <riscv.h>
 #include <stdalign.h>
 #include <types/number.h>
+
+void
+riscv_sv39_pt_initialize(struct riscv_sv39_pt* pt)
+{
+        memzero(pt, RISCV_SV39_PT_ENTRY_COUNT * sizeof(u64));
+}
 
 error_t
 riscv_sv39_map_small_page(struct riscv_sv39_pt* root, vaddr_t va, paddr_t pa, u64 flags)

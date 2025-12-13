@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include <types/str_view.h>
 
 struct str_view
@@ -11,8 +10,6 @@ sv_from_null_term(const void* str)
                 curr++;
         }
         return (struct str_view){ str, length };
-        // for (const char* curr = str; *curr != '\0'; curr++, length++);
-        // return (struct str_view){ str, length };
 }
 
 struct str_view

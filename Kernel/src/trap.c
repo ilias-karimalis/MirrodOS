@@ -3,6 +3,7 @@
 #include <fmt/print.h>
 #include <riscv.h>
 #include <trap.h>
+#include <types/error.h>
 
 u64
 kernel_c_interrupt_handler(u64 sepc, u64 stval, u64 scause, u64 sstatus, struct trap_frame* frame)
@@ -22,7 +23,7 @@ kernel_c_interrupt_handler(u64 sepc, u64 stval, u64 scause, u64 sstatus, struct 
                         // the next interrupt to fire every 0.025 seconds.
                         riscv_stimecmp_write(riscv_time() + 10000000);
                         break;
-                case IPT_TYPE_EXTERNAL:
+                case IPT_TYPE_EXTERNAL: {
                         error_t err = plic_driver_handle_interrupt(devices_get_plic_driver(frame->hartid));
                         switch (error_top(err)) {
                                 case EC_SUCCESS:
@@ -40,6 +41,7 @@ kernel_c_interrupt_handler(u64 sepc, u64 stval, u64 scause, u64 sstatus, struct 
                                         __builtin_unreachable();
                         }
                         break;
+                }
                 case IPT_TYPE_OVERFLOW:
                         PANIC(SV("Supervisor overflow interrupt on CPU:{X}"), frame->hartid);
                         break;

@@ -1,131 +1,181 @@
 #pragma once
 
+#include "types/str_view.h"
+#include <devices/virtio/block.h>
+#include <devices/virtio/queue.h>
+#include <stdint.h>
 #include <types/error.h>
 #include <types/number.h>
 
-// Virtio MMIO Legacy layout. Only the fields we want to access are u32; gaps are explicit u8 padding.
-struct virtio_mmio_legacy_registers
-{
-        u32 magic_value;         // 0x000
-        u32 version;             // 0x004
-        u32 device_id;           // 0x008
-        u32 vendor_id;           // 0x00C
-        u32 device_features;     // 0x010
-        u32 device_features_sel; // 0x014
-        u8 _pad_018_01F[0x8];    // 0x018 - 0x01F
-        u32 driver_features;     // 0x020
-        u32 driver_features_sel; // 0x024
-        u8 _pad_028_02F[0x8];    // 0x028 - 0x02F
-        u32 queue_sel;           // 0x030
-        u32 queue_num_max;       // 0x034
-        u32 queue_num;           // 0x038
-        u32 queue_align;         // 0x03C
-        u32 queue_pfn;           // 0x040
-        u8 _pad_044_04F[0xC];    // 0x044 - 0x04F
-        u32 queue_notify;        // 0x050
-        u8 _pad_054_05F[0xC];    // 0x054 - 0x05F
-        u32 interrupt_status;    // 0x060
-        u32 interrupt_ack;       // 0x064
-        u8 _pad_068_06F[0x8];    // 0x068 - 0x06F
-        u32 status;              // 0x070
-        u8 _pad_074_0FF[0x8C];   // 0x074 - 0x0FF
-        u8 config[0];            // 0x100 - device specific
-};
+struct VirtioDevice;
 
-struct virtio_mmio_v2_registers
+struct MMIO_DeviceRegister
 {
-        u32 magic_value;
+        u32 magic;
         u32 version;
         u32 device_id;
         u32 vendor_id;
-        u32 device_features;
-        u32 device_features_sel;
-        u32 driver_features;
-        u32 driver_features_sel;
+        u32 device_feat;
+        u32 device_feat_sel;
+        u32 reserved0[2];
+        u32 driver_feat;
+        u32 driver_feat_sel;
+        u32 reserved1[2];
         u32 queue_sel;
         u32 queue_num_max;
         u32 queue_num;
+        u32 reserved2[2];
         u32 queue_ready;
+        u32 reserved3[2];
         u32 queue_notify;
+        u32 reserved4[3];
         u32 interrupt_status;
         u32 interrupt_ack;
+        u32 reserved5[2];
         u32 status;
-        u32 queue_desc_low;
-        u32 queue_desc_high;
-        u32 queue_avail_low;
-        u32 queue_avail_high;
-        u32 queue_used_low;
-        u32 queue_used_high;
+        u32 reserved6[3];
+        u32 queue_desc_lo;
+        u32 queue_desc_hi;
+        u32 reserved7[2];
+        u32 queue_avail_lo;
+        u32 queue_avail_hi;
+        u32 reserved8[2];
+        u32 queue_used_lo;
+        u32 queue_used_hi;
+        u32 reserved9[21];
         u32 config_generation;
-        char config[0];
+        u32 config[0];
 };
 
-enum virtio_device_status
+// ---------------------------------------------------------------------------------------------------------------------
+// Device status field options:
+// ---------------------------------------------------------------------------------------------------------------------
+
+/// Indicates that MirrodOS has found the device and recognizes it as a valid virtio device.
+static const u32 VIRTIO_STATUS_ACK = 0x1;
+
+/// Indicates that MiirodOS knows how to drive the device.
+static const u32 VIRTIO_STATUS_DRIVER = 0x2;
+
+/// Indicates that something went wrong in MirrodOS, and has given up on the device. This could be an internal error, or
+/// the driver didn't like the device for some reasonm ir even a fatal error during device operation.
+static const u32 VIRITO_STATUS_FAILED = 128;
+
+/// Inidicates that the driver has acknowledged all the features it understands, and feature negotiation is complete.
+static const u32 VIRTIO_STATUS_FEATURES_OK = 8;
+
+/// Indicates that the driver is set up and ready to drive the device.
+static const u32 VIRTIO_STATUS_DRIVER_OK = 4;
+
+/// Indicates that the device has experienced an error from which it can't recover.
+static const u32 VIRTIO_STATUS_DEVICE_NEEDS_RESET = 64;
+
+/// Begins devices initialization by resetting the device.
+static const u32 VIRTIO_STATUS_PERFORM_RESET = 0;
+
+// --------------------------------------------------------------------------------------------------------------------
+// Device Identifiers:
+// --------------------------------------------------------------------------------------------------------------------
+
+enum VirtioDevice_Identifier
 {
-        /// Writen to the device by the driver at any time to reset the device.
-        VIRTIO_DEVICE_STATUS_RESET = 0x0,
-        /// Indicates that the guest OS has found the device and recognized it as a valid virtio device.
-        VIRTIO_DEVICE_STATUS_ACKNOWLEDGE = 0x1,
-        /// Indicates that the guest OS knows how to drive the device.
-        VIRTIO_DEVICE_STATUS_DRIVER = 0x2,
-        /// Indicates that the driver is set up and ready to drive the device.
-        VIRTIO_DEVICE_STATUS_DRIVER_OK = 0x4,
-        /// Indicates that the driver has acknowledged all the features it understands, and feature negotiation is
-        /// complete.
-        VIRTIO_DEVICE_STATUS_FEATURES_OK = 0x8,
-        /// Indicates that something went wrong in the guest, and it has given up on the device. This could be an
-        /// internal error, or the driver didn't like the device for some reason, or even a fatal error during device
-        /// operation. The driver MUST reset the device before attempting to re-initialize it.
-        VIRTIO_DEVICE_STATUS_FAILED = 0x80,
+        VIRTIO_DEVICE_RESERVED = 0,
+        VIRTIO_DEVICE_NET = 1,
+        VIRTIO_DEVICE_BLOCK = 2,
+        VIRTIO_DEVICE_CONSOLE = 3,
+        VIRTIO_DEVICE_ENTROPY = 4,
+        VIRTIO_DEVICE_BALLOON_TRAD = 5,
+        VIRTIO_DEVICE_IOMEM = 6,
+        VIRTIO_DEVICE_RPMSG = 7,
+        VIRTIO_DEVICE_SCSI = 8,
+        VIRTIO_DEVICE_9P = 9,
+        VIRTIO_DEVICE_MAC80211 = 10,
+        VIRTIO_DEVICE_RPROC = 11,
+        VIRTIO_DEVICE_CAIF = 12,
+        VIRTIO_DEVICE_BALLOON = 13,
+        VIRTIO_DEVICE_GPU = 14,
+        VIRTIO_DEVICE_TIMER = 15,
+        VIRTIO_DEVICE_INPUT = 16,
 };
 
-enum virtio_device_type
-{
-        VIRTIO_DEVICE_TYPE_RESERVED = 0x0,
-        VIRTIO_DEVICE_TYPE_NETWORK = 0x1,
-        VIRTIO_DEVICE_TYPE_BLOCK_DEVICE = 0x2,
-        VIRTIO_DEVICE_TYPE_CONSOLE = 0x3,
-        VIRTIO_DEVICE_TYPE_ENTROPY_SOURCE = 0x4,
-        VIRTIO_DEVICE_TYPE_MEMORY_BALLOON_TRAD = 0x5,
-        VIRTIO_DEVICE_TYPE_IOMEMORY = 0x6,
-        VIRTIO_DEVICE_TYPE_RPMSG = 0x7,
-        VIRTIO_DEVICE_TYPE_SCSI_HOST = 0x8,
-        VIRTIO_DEVICE_TYPE_9P_TRANSPORT = 0x9,
-        VIRTIO_DEVICE_TYPE_MAC80211_WLAN = 0xA,
-        VIRTIO_DEVICE_TYPE_RPROC_SERIAL = 0xB,
-        VIRTIO_DEVICE_TYPE_CAIF = 0xC,
-        VIRTIO_DEVICE_TYPE_MEMORY_BALLOON = 0xD,
-        VIRTIO_DEVICE_TYPE_GPU = 0x10,
-        VIRTIO_DEVICE_TYPE_TIMER = 0x11,
-        VIRTIO_DEVICE_TYPE_INPUT = 0x12,
-        VIRTIO_DEVICE_TYPE_SOCKET = 0x13,
-        VIRTIO_DEVICE_TYPE_CRYPTO = 0x14,
-        VIRTIO_DEVICE_TYPE_SIGNAL_DIST = 0x15,
-        VIRTIO_DEVICE_TYPE_PSTORE = 0x16,
-        VIRTIO_DEVICE_TYPE_IOMMU = 0x17,
-        VIRTIO_DEVICE_TYPE_MEMORY = 0x18,
-        VIRTIO_DEVICE_TYPE_UNSUPPORTED = 0x100,
+static const struct str_view VIRTIO_DEVICE_ID_STRINGS[] = {
+        [VIRTIO_DEVICE_RESERVED] = S("VIRTIO_DEVICE_RESERVED"),
+        [VIRTIO_DEVICE_NET] = S("VIRTIO_DEVICE_NET"),
+        [VIRTIO_DEVICE_BLOCK] = S("VIRTIO_DEVICE_BLOCK"),
+        [VIRTIO_DEVICE_CONSOLE] = S("VIRTIO_DEVICE_CONSOLE"),
+        [VIRTIO_DEVICE_ENTROPY] = S("VIRTIO_DEVICE_ENTROPY"),
+        [VIRTIO_DEVICE_BALLOON_TRAD] = S("VIRTIO_DEVICE_BALLOON_TRAD"),
+        [VIRTIO_DEVICE_IOMEM] = S("VIRTIO_DEVICE_IOMEM"),
+        [VIRTIO_DEVICE_RPMSG] = S("VIRTIO_DEVICE_RPMSG"),
+        [VIRTIO_DEVICE_SCSI] = S("VIRTIO_DEVICE_SCSI"),
+        [VIRTIO_DEVICE_9P] = S("VIRTIO_DEVICE_9P"),
+        [VIRTIO_DEVICE_MAC80211] = S("VIRTIO_DEVICE_MAC80211"),
+        [VIRTIO_DEVICE_RPROC] = S("VIRTIO_DEVICE_RPROC"),
+        [VIRTIO_DEVICE_CAIF] = S("VIRTIO_DEVICE_CAIF"),
+        [VIRTIO_DEVICE_BALLOON] = S("VIRTIO_DEVICE_BALLOON"),
+        [VIRTIO_DEVICE_GPU] = S("VIRTIO_DEVICE_GPU"),
+        [VIRTIO_DEVICE_TIMER] = S("VIRTIO_DEVICE_TIMER"),
+        [VIRTIO_DEVICE_INPUT] = S("VIRTIO_DEVICE_INPUT"),
 };
 
-struct virtio_blk_driver
-{};
+// --------------------------------------------------------------------------------------------------------------------
+// Device features
+// --------------------------------------------------------------------------------------------------------------------
 
-struct virtio_driver
+struct VirtioDevice_Feature
 {
-        enum virtio_device_status status;
-        enum virtio_device_type type;
-        bool is_legacy;
-        union registers
-        {
-                volatile struct virtio_mmio_legacy_registers* legacy;
-                volatile struct virtio_mmio_v2_registers* v2;
-        } regs;
-
-        union
-        {
-                struct virtio_blk_driver blk;
-        } d;
+        /// The feature name as defined by the specification.
+        struct str_view feature_name;
+        /// The bit index representing the feature.
+        u8 feature_bit;
+        /// Marks whether the driver implementation supports this feature.
+        bool driver_support;
 };
 
 error_t
-virtio_mmio_driver_init(struct virtio_driver* device, void* device_base, size_t device_size);
+virtio_mmio_negotiate_features(struct VirtioDevice* dev,
+                               const struct VirtioDevice_Feature* features,
+                               size_t features_count);
+
+enum VirtioGenericDevice_FeatureBit
+{
+        /// Negotiation of this feature indicates that we can use `VirtQueueDescriptor`s with the
+        /// `VIRTQUEUE_DESCRIPTOR_INDIRECT` flag set. Specification reference 2.4.5.3
+        VIRTIO_GEN_IND_DESC = 28,
+        /// This feature enables the `used_event` and `avail_event` fields in the `VirtQueueAvailable` and
+        /// `VirtQueueUsed` structures respectively. Specification reference 2.4.7 and 2.4.8
+        VIRTIO_GEN_EVENT_IDX = 29,
+        /// This indicates compliance with the virtio-v1.0 specification.
+        VIRTIO_GEN_VERSION_1 = 32,
+};
+
+static const struct VirtioDevice_Feature VIRTIO_GEN_DEVICE_FEATURES[] = {
+        { .feature_name = S("VIRTIO_GEN_IND_DESC"), .feature_bit = VIRTIO_GEN_IND_DESC, .driver_support = true },
+        { .feature_name = S("VIRTIO_GEN_EVENT_IDX"), .feature_bit = VIRTIO_GEN_EVENT_IDX, .driver_support = true },
+        { .feature_name = S("VIRTIO_GEN_VERSION_1"), .feature_bit = VIRTIO_GEN_VERSION_1, .driver_support = true },
+};
+
+// --------------------------------------------------------------------------------------------------------------------
+//
+// --------------------------------------------------------------------------------------------------------------------
+
+struct VirtioDevice
+{
+        volatile struct MMIO_DeviceRegister* regs;
+
+        /// Technically the virtio specification allows for up to 64 features, but as far as I understand there's no
+        /// actual device that uses these extra bits.
+        bool features[32];
+
+        enum VirtioDevice_Identifier type;
+        union VirtioDeviceType
+        {
+                struct VirtioBlockDevice blk;
+        } u;
+};
+
+error_t
+virtio_mmio_device_init(struct VirtioDevice* dev, void* device_base, size_t device_size);
+
+error_t
+virtio_mmio_virtqueue_init(struct VirtioDevice* vdev, struct VirtQueue* queue, u32 queue_index, u32 queue_size);

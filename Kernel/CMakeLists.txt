@@ -10,7 +10,8 @@ add_executable(MirodosKernel.elf
     src/devices/plic.c
     src/devices/uart.c
     src/devices/virtio/mmio.c
-    src/devices/virtio/blk.c
+    src/devices/virtio/queue.c
+    src/devices/virtio/block.c
     src/fmt/print.c
     src/kernel_entry.c
     src/kvspace.c
@@ -25,6 +26,8 @@ add_executable(MirodosKernel.elf
     src/trap.c
     src/asm/trap.s
     src/riscv.c
+    src/elf.c
+    src/vmm.c
 )
 target_include_directories(MirodosKernel.elf PRIVATE include/)
 target_compile_options(MirodosKernel.elf PRIVATE -Wall -Werror -mcmodel=medany -ffreestanding -nostdlib -fno-exceptions -fno-stack-protector)

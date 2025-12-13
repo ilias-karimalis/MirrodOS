@@ -46,6 +46,17 @@ static struct str_view error_strings[] = {
 
         // Uart Errors
         [EC_UART_DRIVER_NO_DATA] = SV("EC_UART_DRIVER_NO_DATA: No data available to read from UART."),
+
+        // Elf Errors
+        [EC_ELF_INVALID] = SV("EC_ELF_INVALID: Invalid ELF file."),
+
+        // VSpace Errors
+        [EC_VSPACE_INIT_FAILURE] = SV("EC_VSPACE_INIT_FAILURE: Virtual space initialization failed."),
+        [EC_VSPACE_REGION_ALREADY_ALLOCATED] =
+          SV("EC_VSPACE_REGION_ALREADY_ALLOCATED: Virtual space region is already allocated."),
+        [EC_VSPACE_REGION_ALLOC_FAILED] = SV("EC_VSPACE_REGION_ALLOC_FAILED: Virtual space region allocation failed."),
+        [EC_VSPACE_BAD_ALIGNMENT] = SV("EC_VSPACE_BAD_ALIGNMENT: Bad alignment for virtual space allocation."),
+        [EC_VSPACE_REGION_MAP_FAILED] = SV("EC_VSPACE_REGION_MAP_FAILED: Virtual space region mapping failed."),
 };
 
 // Static assertion to ensure error_strings array size matches ErrorCode enum count

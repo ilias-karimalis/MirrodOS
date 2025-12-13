@@ -29,6 +29,13 @@ enum ErrorCode
         EC_VIRTIO_INVALID_DEVICE,
         EC_VIRTIO_UNSUPPORTED_DEVICE,
 
+        // VirtQueue Errors
+        EC_VIRTQUEUE_SIZE,
+        EC_VIRTQUEUE_CREATE,
+        EC_VIRTQUEUE_FULL,
+        EC_VIRTQUEUE_IN_USE,
+        EC_VIRTQUEUE_UNAVAIL,
+
         // Device Tree Errors
         EC_DT_BLOB_INVALID_MAGIC,
         EC_DT_BLOB_EMPTY_TREE,
@@ -47,6 +54,16 @@ enum ErrorCode
 
         /// Uart Errors
         EC_UART_DRIVER_NO_DATA,
+
+        /// Elf Errors
+        EC_ELF_INVALID,
+
+        /// VSpace Errors
+        EC_VSPACE_INIT_FAILURE,
+        EC_VSPACE_REGION_ALREADY_ALLOCATED,
+        EC_VSPACE_REGION_ALLOC_FAILED,
+        EC_VSPACE_BAD_ALIGNMENT,
+        EC_VSPACE_REGION_MAP_FAILED,
 
         // This must be the last entry - used for counting
         EC_COUNT

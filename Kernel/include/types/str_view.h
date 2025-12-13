@@ -16,6 +16,7 @@ sv_from_null_term(const void* str);
 
 /// Constructs a str_view from a string literal.
 #define SV(str) (struct str_view){ .data = str, .size = sizeof(str) / sizeof(str[0]) - 1 }
+#define S(str) SV(str)
 // Not sure this is a good idea and it's quite jank, but we can print str_views by expanding them to the pointer size
 // and accounting for it being two arguments:
 #define SVP(strview) (strview).data, (strview).size
